@@ -1,0 +1,69 @@
+service: archive-service
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+
+  environment:
+    TABLE_NAME: ${opt:tableName, '${self:service}-table'}
+    FALLBACK_TABLE_NAME: ${self:service}-table
+    BUCKET_NAME: ${opt:bucketName, '${self:service}-114-bucket-${aws:accountId}'}
+
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:Scan
+            - dynamodb:BatchWriteItem
+            - dynamodb:PutItem
+            - dynamodb:DeleteItem
+          Resource:
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:service}-table
+
+        - Effect: Allow
+          Action:
+            - s3:PutObject
+          Resource:
+            - arn:aws:s3:::${opt:bucketName, '${self:service}-114-bucket-${aws:accountId}'}/*
+
+functions:
+  archive:
+    handler: functions/archive.handler
+    events:
+      - schedule:
+          rate: rate(1 day)
+          enabled: true
+
+  seed:
+    handler: functions/seed.handler
+
+resources:
+  Resources:
+
+    ArchiveTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:service}-table
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: createdAt
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: createdAt-index
+            KeySchema:
+              - AttributeName: createdAt
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+
+    ArchiveBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:service}-114-bucket-${aws:accountId} # i added this for a globally unique bucket name

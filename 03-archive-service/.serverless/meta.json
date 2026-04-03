@@ -1,0 +1,384 @@
+{
+  "/home/chigisoftdev/projects/netzence-task/archive-service/serverless.yaml": {
+    "versionFramework": "4.33.3",
+    "servicePath": "/home/chigisoftdev/projects/netzence-task/archive-service/serverless.yaml",
+    "serviceConfigFileName": "serverless.yaml",
+    "service": {
+      "service": "archive-service",
+      "provider": {
+        "name": "aws",
+        "runtime": "nodejs18.x",
+        "region": "us-east-1",
+        "environment": {
+          "TABLE_NAME": "archive-service-table",
+          "FALLBACK_TABLE_NAME": "archive-service-table",
+          "BUCKET_NAME": "archive-service-114-bucket-677276079030"
+        },
+        "iam": {
+          "role": {
+            "statements": [
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "dynamodb:Scan",
+                  "dynamodb:BatchWriteItem",
+                  "dynamodb:PutItem",
+                  "dynamodb:DeleteItem"
+                ],
+                "Resource": "arn:aws:dynamodb:us-east-1:*:table/archive-service-table"
+              },
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "s3:PutObject"
+                ],
+                "Resource": "arn:aws:s3:::archive-service-114-bucket-677276079030/*"
+              }
+            ]
+          }
+        },
+        "stage": "dev",
+        "versionFunctions": true
+      },
+      "functions": {
+        "archive": {
+          "handler": "functions/archive.handler",
+          "events": [
+            {
+              "schedule": {
+                "rate": [
+                  "rate(1 day)"
+                ],
+                "enabled": true
+              }
+            }
+          ],
+          "name": "archive-service-dev-archive"
+        },
+        "seed": {
+          "handler": "functions/seed.handler",
+          "events": [],
+          "name": "archive-service-dev-seed"
+        }
+      },
+      "resources": {
+        "Resources": {
+          "ArchiveTable": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+              "TableName": "archive-service-table",
+              "BillingMode": "PAY_PER_REQUEST",
+              "AttributeDefinitions": [
+                {
+                  "AttributeName": "id",
+                  "AttributeType": "S"
+                },
+                {
+                  "AttributeName": "createdAt",
+                  "AttributeType": "S"
+                }
+              ],
+              "KeySchema": [
+                {
+                  "AttributeName": "id",
+                  "KeyType": "HASH"
+                }
+              ],
+              "GlobalSecondaryIndexes": [
+                {
+                  "IndexName": "createdAt-index",
+                  "KeySchema": [
+                    {
+                      "AttributeName": "createdAt",
+                      "KeyType": "HASH"
+                    }
+                  ],
+                  "Projection": {
+                    "ProjectionType": "ALL"
+                  }
+                }
+              ]
+            }
+          },
+          "ArchiveBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+              "BucketName": "archive-service-114-bucket-677276079030"
+            }
+          }
+        }
+      }
+    },
+    "provider": {
+      "name": "aws",
+      "runtime": "nodejs18.x",
+      "region": "us-east-1",
+      "environment": {
+        "TABLE_NAME": "archive-service-table",
+        "FALLBACK_TABLE_NAME": "archive-service-table",
+        "BUCKET_NAME": "archive-service-114-bucket-677276079030"
+      },
+      "iam": {
+        "role": {
+          "statements": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "dynamodb:Scan",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:DeleteItem"
+              ],
+              "Resource": "arn:aws:dynamodb:us-east-1:*:table/archive-service-table"
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:PutObject"
+              ],
+              "Resource": "arn:aws:s3:::archive-service-114-bucket-677276079030/*"
+            }
+          ]
+        }
+      },
+      "stage": "dev",
+      "versionFunctions": true
+    },
+    "dashboard": {
+      "isEnabledForService": false,
+      "requiredAuthentication": false,
+      "orgFeaturesInUse": null,
+      "orgObservabilityIntegrations": null,
+      "serviceAppId": null,
+      "serviceProvider": null,
+      "instanceParameters": null
+    },
+    "serviceRawFile": "service: archive-service\n\nprovider:\n  name: aws\n  runtime: nodejs18.x\n  region: us-east-1\n\n  environment:\n    TABLE_NAME: ${opt:tableName, '${self:service}-table'}\n    FALLBACK_TABLE_NAME: ${self:service}-table\n    BUCKET_NAME: ${opt:bucketName, '${self:service}-114-bucket-${aws:accountId}'}\n\n  iam:\n    role:\n      statements:\n        - Effect: Allow\n          Action:\n            - dynamodb:Scan\n            - dynamodb:BatchWriteItem\n            - dynamodb:PutItem\n            - dynamodb:DeleteItem\n          Resource:\n            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:service}-table\n\n        - Effect: Allow\n          Action:\n            - s3:PutObject\n          Resource:\n            - arn:aws:s3:::${opt:bucketName, '${self:service}-114-bucket-${aws:accountId}'}/*\n\nfunctions:\n  archive:\n    handler: functions/archive.handler\n    events:\n      - schedule:\n          rate: rate(1 day)\n          enabled: true\n\n  seed:\n    handler: functions/seed.handler\n\nresources:\n  Resources:\n\n    ArchiveTable:\n      Type: AWS::DynamoDB::Table\n      Properties:\n        TableName: ${self:service}-table\n        BillingMode: PAY_PER_REQUEST\n        AttributeDefinitions:\n          - AttributeName: id\n            AttributeType: S\n          - AttributeName: createdAt\n            AttributeType: S\n        KeySchema:\n          - AttributeName: id\n            KeyType: HASH\n        GlobalSecondaryIndexes:\n          - IndexName: createdAt-index\n            KeySchema:\n              - AttributeName: createdAt\n                KeyType: HASH\n            Projection:\n              ProjectionType: ALL\n\n    ArchiveBucket:\n      Type: AWS::S3::Bucket\n      Properties:\n        BucketName: ${self:service}-114-bucket-${aws:accountId} # i added this for a globally unique bucket name",
+    "command": [
+      "invoke"
+    ],
+    "options": {
+      "function": "archive"
+    },
+    "orgId": "4b4a1b96-3e15-498e-9f0b-e71591217455",
+    "orgName": "judge",
+    "userId": "qdkC7PHzKm6TQwdV7x",
+    "userName": "judge",
+    "serviceProviderAwsAccountId": "677276079030",
+    "serviceProviderAwsCfStackName": "archive-service-dev",
+    "serviceProviderAwsCfStackId": "arn:aws:cloudformation:us-east-1:677276079030:stack/archive-service-dev/dcb4f890-2ed7-11f1-a26c-0affe0941cdb",
+    "serviceProviderAwsCfStackCreated": "2026-04-02T21:06:48.244Z",
+    "serviceProviderAwsCfStackUpdated": "2026-04-03T09:01:05.954Z",
+    "serviceProviderAwsCfStackStatus": "UPDATE_COMPLETE",
+    "serviceProviderAwsCfStackOutputs": [
+      {
+        "OutputKey": "SeedLambdaFunctionQualifiedArn",
+        "OutputValue": "arn:aws:lambda:us-east-1:677276079030:function:archive-service-dev-seed:6",
+        "Description": "Current Lambda function version",
+        "ExportName": "sls-archive-service-dev-SeedLambdaFunctionQualifiedArn"
+      },
+      {
+        "OutputKey": "ArchiveLambdaFunctionQualifiedArn",
+        "OutputValue": "arn:aws:lambda:us-east-1:677276079030:function:archive-service-dev-archive:8",
+        "Description": "Current Lambda function version",
+        "ExportName": "sls-archive-service-dev-ArchiveLambdaFunctionQualifiedArn"
+      },
+      {
+        "OutputKey": "ServerlessDeploymentBucketName",
+        "OutputValue": "serverless-framework-deployments-us-east-1-4e5dcc32-bf4c",
+        "ExportName": "sls-archive-service-dev-ServerlessDeploymentBucketName"
+      }
+    ]
+  },
+  "/home/chigisoftdev/projects/netzence-task/03-archive-service/serverless.yaml": {
+    "versionFramework": "4.33.3",
+    "servicePath": "/home/chigisoftdev/projects/netzence-task/03-archive-service/serverless.yaml",
+    "serviceConfigFileName": "serverless.yaml",
+    "service": {
+      "service": "archive-service",
+      "provider": {
+        "name": "aws",
+        "runtime": "nodejs18.x",
+        "region": "us-east-1",
+        "environment": {
+          "TABLE_NAME": "archive-service-table",
+          "FALLBACK_TABLE_NAME": "archive-service-table",
+          "BUCKET_NAME": "archive-service-114-bucket-677276079030"
+        },
+        "iam": {
+          "role": {
+            "statements": [
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "dynamodb:Scan",
+                  "dynamodb:BatchWriteItem",
+                  "dynamodb:PutItem",
+                  "dynamodb:DeleteItem"
+                ],
+                "Resource": "arn:aws:dynamodb:us-east-1:*:table/archive-service-table"
+              },
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "s3:PutObject"
+                ],
+                "Resource": "arn:aws:s3:::archive-service-114-bucket-677276079030/*"
+              }
+            ]
+          }
+        },
+        "stage": "dev",
+        "versionFunctions": true
+      },
+      "functions": {
+        "archive": {
+          "handler": "functions/archive.handler",
+          "events": [
+            {
+              "schedule": {
+                "rate": [
+                  "rate(1 day)"
+                ],
+                "enabled": true
+              }
+            }
+          ],
+          "name": "archive-service-dev-archive"
+        },
+        "seed": {
+          "handler": "functions/seed.handler",
+          "events": [],
+          "name": "archive-service-dev-seed"
+        }
+      },
+      "resources": {
+        "Resources": {
+          "ArchiveTable": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+              "TableName": "archive-service-table",
+              "BillingMode": "PAY_PER_REQUEST",
+              "AttributeDefinitions": [
+                {
+                  "AttributeName": "id",
+                  "AttributeType": "S"
+                },
+                {
+                  "AttributeName": "createdAt",
+                  "AttributeType": "S"
+                }
+              ],
+              "KeySchema": [
+                {
+                  "AttributeName": "id",
+                  "KeyType": "HASH"
+                }
+              ],
+              "GlobalSecondaryIndexes": [
+                {
+                  "IndexName": "createdAt-index",
+                  "KeySchema": [
+                    {
+                      "AttributeName": "createdAt",
+                      "KeyType": "HASH"
+                    }
+                  ],
+                  "Projection": {
+                    "ProjectionType": "ALL"
+                  }
+                }
+              ]
+            }
+          },
+          "ArchiveBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+              "BucketName": "archive-service-114-bucket-677276079030"
+            }
+          }
+        }
+      }
+    },
+    "provider": {
+      "name": "aws",
+      "runtime": "nodejs18.x",
+      "region": "us-east-1",
+      "environment": {
+        "TABLE_NAME": "archive-service-table",
+        "FALLBACK_TABLE_NAME": "archive-service-table",
+        "BUCKET_NAME": "archive-service-114-bucket-677276079030"
+      },
+      "iam": {
+        "role": {
+          "statements": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "dynamodb:Scan",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:DeleteItem"
+              ],
+              "Resource": "arn:aws:dynamodb:us-east-1:*:table/archive-service-table"
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:PutObject"
+              ],
+              "Resource": "arn:aws:s3:::archive-service-114-bucket-677276079030/*"
+            }
+          ]
+        }
+      },
+      "stage": "dev",
+      "versionFunctions": true
+    },
+    "dashboard": {
+      "isEnabledForService": false,
+      "requiredAuthentication": false,
+      "orgFeaturesInUse": null,
+      "orgObservabilityIntegrations": null,
+      "serviceAppId": null,
+      "serviceProvider": null,
+      "instanceParameters": null
+    },
+    "serviceRawFile": "service: archive-service\n\nprovider:\n  name: aws\n  runtime: nodejs18.x\n  region: us-east-1\n\n  environment:\n    TABLE_NAME: ${opt:tableName, '${self:service}-table'}\n    FALLBACK_TABLE_NAME: ${self:service}-table\n    BUCKET_NAME: ${opt:bucketName, '${self:service}-114-bucket-${aws:accountId}'}\n\n  iam:\n    role:\n      statements:\n        - Effect: Allow\n          Action:\n            - dynamodb:Scan\n            - dynamodb:BatchWriteItem\n            - dynamodb:PutItem\n            - dynamodb:DeleteItem\n          Resource:\n            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:service}-table\n\n        - Effect: Allow\n          Action:\n            - s3:PutObject\n          Resource:\n            - arn:aws:s3:::${opt:bucketName, '${self:service}-114-bucket-${aws:accountId}'}/*\n\nfunctions:\n  archive:\n    handler: functions/archive.handler\n    events:\n      - schedule:\n          rate: rate(1 day)\n          enabled: true\n\n  seed:\n    handler: functions/seed.handler\n\nresources:\n  Resources:\n\n    ArchiveTable:\n      Type: AWS::DynamoDB::Table\n      Properties:\n        TableName: ${self:service}-table\n        BillingMode: PAY_PER_REQUEST\n        AttributeDefinitions:\n          - AttributeName: id\n            AttributeType: S\n          - AttributeName: createdAt\n            AttributeType: S\n        KeySchema:\n          - AttributeName: id\n            KeyType: HASH\n        GlobalSecondaryIndexes:\n          - IndexName: createdAt-index\n            KeySchema:\n              - AttributeName: createdAt\n                KeyType: HASH\n            Projection:\n              ProjectionType: ALL\n\n    ArchiveBucket:\n      Type: AWS::S3::Bucket\n      Properties:\n        BucketName: ${self:service}-114-bucket-${aws:accountId} # i added this for a globally unique bucket name",
+    "command": [
+      "invoke"
+    ],
+    "options": {
+      "function": "archive"
+    },
+    "orgId": "4b4a1b96-3e15-498e-9f0b-e71591217455",
+    "orgName": "judge",
+    "userId": "qdkC7PHzKm6TQwdV7x",
+    "userName": "judge",
+    "serviceProviderAwsAccountId": "677276079030",
+    "serviceProviderAwsCfStackName": "archive-service-dev",
+    "serviceProviderAwsCfStackId": "arn:aws:cloudformation:us-east-1:677276079030:stack/archive-service-dev/dcb4f890-2ed7-11f1-a26c-0affe0941cdb",
+    "serviceProviderAwsCfStackCreated": "2026-04-02T21:06:48.244Z",
+    "serviceProviderAwsCfStackUpdated": "2026-04-03T09:01:05.954Z",
+    "serviceProviderAwsCfStackStatus": "UPDATE_COMPLETE",
+    "serviceProviderAwsCfStackOutputs": [
+      {
+        "OutputKey": "SeedLambdaFunctionQualifiedArn",
+        "OutputValue": "arn:aws:lambda:us-east-1:677276079030:function:archive-service-dev-seed:6",
+        "Description": "Current Lambda function version",
+        "ExportName": "sls-archive-service-dev-SeedLambdaFunctionQualifiedArn"
+      },
+      {
+        "OutputKey": "ArchiveLambdaFunctionQualifiedArn",
+        "OutputValue": "arn:aws:lambda:us-east-1:677276079030:function:archive-service-dev-archive:8",
+        "Description": "Current Lambda function version",
+        "ExportName": "sls-archive-service-dev-ArchiveLambdaFunctionQualifiedArn"
+      },
+      {
+        "OutputKey": "ServerlessDeploymentBucketName",
+        "OutputValue": "serverless-framework-deployments-us-east-1-4e5dcc32-bf4c",
+        "ExportName": "sls-archive-service-dev-ServerlessDeploymentBucketName"
+      }
+    ]
+  }
+}

@@ -1,0 +1,436 @@
+{
+  "service": {
+    "service": "archive-service",
+    "serviceObject": {
+      "name": "archive-service"
+    },
+    "provider": {
+      "name": "aws",
+      "runtime": "nodejs18.x",
+      "region": "us-east-1",
+      "environment": {
+        "TABLE_NAME": "archive-service-table",
+        "FALLBACK_TABLE_NAME": "archive-service-table",
+        "BUCKET_NAME": "archive-service-114-bucket-677276079030"
+      },
+      "iam": {
+        "role": {
+          "statements": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "dynamodb:Scan",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:DeleteItem"
+              ],
+              "Resource": "arn:aws:dynamodb:us-east-1:*:table/archive-service-table"
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:PutObject"
+              ],
+              "Resource": "arn:aws:s3:::archive-service-114-bucket-677276079030/*"
+            }
+          ]
+        }
+      },
+      "stage": "dev",
+      "versionFunctions": true,
+      "compiledCloudFormationTemplate": {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Description": "The AWS CloudFormation template for this Serverless application",
+        "Resources": {
+          "ArchiveLogGroup": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+              "LogGroupName": "/aws/lambda/archive-service-dev-archive"
+            }
+          },
+          "SeedLogGroup": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+              "LogGroupName": "/aws/lambda/archive-service-dev-seed"
+            }
+          },
+          "IamRoleLambdaExecution": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+              "AssumeRolePolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": [
+                        "lambda.amazonaws.com"
+                      ]
+                    },
+                    "Action": [
+                      "sts:AssumeRole"
+                    ]
+                  }
+                ]
+              },
+              "Policies": [
+                {
+                  "PolicyName": {
+                    "Fn::Join": [
+                      "-",
+                      [
+                        "archive-service",
+                        "dev",
+                        "lambda"
+                      ]
+                    ]
+                  },
+                  "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "logs:CreateLogStream",
+                          "logs:CreateLogGroup",
+                          "logs:TagResource"
+                        ],
+                        "Resource": [
+                          {
+                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/archive-service-dev*:*"
+                          }
+                        ]
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "logs:PutLogEvents"
+                        ],
+                        "Resource": [
+                          {
+                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/archive-service-dev*:*:*"
+                          }
+                        ]
+                      },
+                      {
+                        "$ref": "$[\"service\"][\"provider\"][\"iam\"][\"role\"][\"statements\"][0]"
+                      },
+                      {
+                        "$ref": "$[\"service\"][\"provider\"][\"iam\"][\"role\"][\"statements\"][1]"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Path": "/",
+              "RoleName": {
+                "Fn::Join": [
+                  "-",
+                  [
+                    "archive-service",
+                    "dev",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    "lambdaRole"
+                  ]
+                ]
+              }
+            }
+          },
+          "ArchiveLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "Code": {
+                "S3Bucket": "serverless-framework-deployments-us-east-1-4e5dcc32-bf4c",
+                "S3Key": "serverless/archive-service/dev/1775206825575-2026-04-03T09:00:25.575Z/archive-service.zip"
+              },
+              "Handler": "functions/archive.handler",
+              "Runtime": "nodejs18.x",
+              "FunctionName": "archive-service-dev-archive",
+              "MemorySize": 1024,
+              "Timeout": 6,
+              "Environment": {
+                "Variables": {
+                  "TABLE_NAME": "archive-service-table",
+                  "FALLBACK_TABLE_NAME": "archive-service-table",
+                  "BUCKET_NAME": "archive-service-114-bucket-677276079030"
+                }
+              },
+              "Role": {
+                "Fn::GetAtt": [
+                  "IamRoleLambdaExecution",
+                  "Arn"
+                ]
+              }
+            },
+            "DependsOn": [
+              "ArchiveLogGroup"
+            ]
+          },
+          "SeedLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "Code": {
+                "S3Bucket": "serverless-framework-deployments-us-east-1-4e5dcc32-bf4c",
+                "S3Key": "serverless/archive-service/dev/1775206825575-2026-04-03T09:00:25.575Z/archive-service.zip"
+              },
+              "Handler": "functions/seed.handler",
+              "Runtime": "nodejs18.x",
+              "FunctionName": "archive-service-dev-seed",
+              "MemorySize": 1024,
+              "Timeout": 6,
+              "Environment": {
+                "Variables": {
+                  "TABLE_NAME": "archive-service-table",
+                  "FALLBACK_TABLE_NAME": "archive-service-table",
+                  "BUCKET_NAME": "archive-service-114-bucket-677276079030"
+                }
+              },
+              "Role": {
+                "Fn::GetAtt": [
+                  "IamRoleLambdaExecution",
+                  "Arn"
+                ]
+              }
+            },
+            "DependsOn": [
+              "SeedLogGroup"
+            ]
+          },
+          "ArchiveLambdaVersionr6va7GrCpRdstThPfxEwIyJhU6I6ZgJ79Ov5f0Okso": {
+            "Type": "AWS::Lambda::Version",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+              "FunctionName": {
+                "Ref": "ArchiveLambdaFunction"
+              },
+              "CodeSha256": "W4UevFxOyipWxaSZ9LLkCmuaq1ggFMb/dEOvzsIJCb4="
+            }
+          },
+          "SeedLambdaVersionRjoRmAUcBJIRpRnqbJ8qtA0c0AF1eHzm1ZCxTZdsw": {
+            "Type": "AWS::Lambda::Version",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+              "FunctionName": {
+                "Ref": "SeedLambdaFunction"
+              },
+              "CodeSha256": "W4UevFxOyipWxaSZ9LLkCmuaq1ggFMb/dEOvzsIJCb4="
+            }
+          },
+          "ArchiveEventsRuleSchedule1": {
+            "Type": "AWS::Events::Rule",
+            "Properties": {
+              "ScheduleExpression": "rate(1 day)",
+              "State": "ENABLED",
+              "Targets": [
+                {
+                  "Arn": {
+                    "Fn::GetAtt": [
+                      "ArchiveLambdaFunction",
+                      "Arn"
+                    ]
+                  },
+                  "Id": "archiveSchedule"
+                }
+              ]
+            }
+          },
+          "ArchiveLambdaPermissionEventsRuleSchedule1": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+              "FunctionName": {
+                "Fn::GetAtt": [
+                  "ArchiveLambdaFunction",
+                  "Arn"
+                ]
+              },
+              "Action": "lambda:InvokeFunction",
+              "Principal": "events.amazonaws.com",
+              "SourceArn": {
+                "Fn::GetAtt": [
+                  "ArchiveEventsRuleSchedule1",
+                  "Arn"
+                ]
+              }
+            }
+          },
+          "ArchiveTable": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+              "TableName": "archive-service-table",
+              "BillingMode": "PAY_PER_REQUEST",
+              "AttributeDefinitions": [
+                {
+                  "AttributeName": "id",
+                  "AttributeType": "S"
+                },
+                {
+                  "AttributeName": "createdAt",
+                  "AttributeType": "S"
+                }
+              ],
+              "KeySchema": [
+                {
+                  "AttributeName": "id",
+                  "KeyType": "HASH"
+                }
+              ],
+              "GlobalSecondaryIndexes": [
+                {
+                  "IndexName": "createdAt-index",
+                  "KeySchema": [
+                    {
+                      "AttributeName": "createdAt",
+                      "KeyType": "HASH"
+                    }
+                  ],
+                  "Projection": {
+                    "ProjectionType": "ALL"
+                  }
+                }
+              ]
+            }
+          },
+          "ArchiveBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+              "BucketName": "archive-service-114-bucket-677276079030"
+            }
+          }
+        },
+        "Outputs": {
+          "ServerlessDeploymentBucketName": {
+            "Value": "serverless-framework-deployments-us-east-1-4e5dcc32-bf4c",
+            "Export": {
+              "Name": "sls-archive-service-dev-ServerlessDeploymentBucketName"
+            }
+          },
+          "ArchiveLambdaFunctionQualifiedArn": {
+            "Description": "Current Lambda function version",
+            "Value": {
+              "Ref": "ArchiveLambdaVersionr6va7GrCpRdstThPfxEwIyJhU6I6ZgJ79Ov5f0Okso"
+            },
+            "Export": {
+              "Name": "sls-archive-service-dev-ArchiveLambdaFunctionQualifiedArn"
+            }
+          },
+          "SeedLambdaFunctionQualifiedArn": {
+            "Description": "Current Lambda function version",
+            "Value": {
+              "Ref": "SeedLambdaVersionRjoRmAUcBJIRpRnqbJ8qtA0c0AF1eHzm1ZCxTZdsw"
+            },
+            "Export": {
+              "Name": "sls-archive-service-dev-SeedLambdaFunctionQualifiedArn"
+            }
+          }
+        }
+      },
+      "vpc": {}
+    },
+    "pluginsData": {},
+    "functions": {
+      "archive": {
+        "handler": "functions/archive.handler",
+        "events": [
+          {
+            "schedule": {
+              "rate": [
+                "rate(1 day)"
+              ],
+              "enabled": true
+            }
+          }
+        ],
+        "name": "archive-service-dev-archive",
+        "package": {},
+        "memory": 1024,
+        "timeout": 6,
+        "runtime": "nodejs18.x",
+        "vpc": {},
+        "versionLogicalId": "ArchiveLambdaVersionr6va7GrCpRdstThPfxEwIyJhU6I6ZgJ79Ov5f0Okso"
+      },
+      "seed": {
+        "handler": "functions/seed.handler",
+        "events": [],
+        "name": "archive-service-dev-seed",
+        "package": {},
+        "memory": 1024,
+        "timeout": 6,
+        "runtime": "nodejs18.x",
+        "vpc": {},
+        "versionLogicalId": "SeedLambdaVersionRjoRmAUcBJIRpRnqbJ8qtA0c0AF1eHzm1ZCxTZdsw"
+      }
+    },
+    "resources": {
+      "Resources": {
+        "ArchiveTable": {
+          "Type": "AWS::DynamoDB::Table",
+          "Properties": {
+            "TableName": "archive-service-table",
+            "BillingMode": "PAY_PER_REQUEST",
+            "AttributeDefinitions": [
+              {
+                "AttributeName": "id",
+                "AttributeType": "S"
+              },
+              {
+                "AttributeName": "createdAt",
+                "AttributeType": "S"
+              }
+            ],
+            "KeySchema": [
+              {
+                "AttributeName": "id",
+                "KeyType": "HASH"
+              }
+            ],
+            "GlobalSecondaryIndexes": [
+              {
+                "IndexName": "createdAt-index",
+                "KeySchema": [
+                  {
+                    "AttributeName": "createdAt",
+                    "KeyType": "HASH"
+                  }
+                ],
+                "Projection": {
+                  "ProjectionType": "ALL"
+                }
+              }
+            ]
+          }
+        },
+        "ArchiveBucket": {
+          "Type": "AWS::S3::Bucket",
+          "Properties": {
+            "BucketName": "archive-service-114-bucket-677276079030"
+          }
+        }
+      },
+      "Outputs": {}
+    },
+    "configValidationMode": "warn",
+    "serviceFilename": "serverless",
+    "initialServerlessConfig": {
+      "service": "archive-service",
+      "provider": {
+        "$ref": "$[\"service\"][\"provider\"]"
+      },
+      "functions": {
+        "$ref": "$[\"service\"][\"functions\"]"
+      },
+      "resources": {
+        "$ref": "$[\"service\"][\"resources\"]"
+      }
+    },
+    "appId": null,
+    "orgId": null,
+    "layers": {},
+    "artifact": "/home/chigisoftdev/projects/netzence-task/archive-service/.serverless/archive-service.zip"
+  },
+  "package": {
+    "artifactDirectoryName": "serverless/archive-service/dev/1775206825575-2026-04-03T09:00:25.575Z",
+    "artifact": "archive-service.zip"
+  }
+}
